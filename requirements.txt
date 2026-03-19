@@ -1,0 +1,7 @@
+python-dotenv
+yt-dlp
+google-genai
+
+# Whisper is only needed if youtube-transcript-api fails (e.g. transcripts disabled).
+# It pulls in PyTorch (~2GB). Install only if needed:
+# openai-whisper

@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "YT Research Flagger",
+  "version": "1.0",
+  "description": "Flag YouTube videos for later summarization into Obsidian",
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "flag-video": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "windows": "Alt+S"
+      },
+      "description": "Flag current YouTube video for research"
+    }
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "YT Research Flagger"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

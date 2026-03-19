@@ -1,0 +1,12 @@
+.venv/
+.env
+data/queue.jsonl
+data/processed.jsonl
+data/native_host.log
+data/cookies.txt
+pipeline/run_native_host.bat
+pipeline/native_host_manifest.json
+__pycache__/
+*.pyc
+.claude/
+nul

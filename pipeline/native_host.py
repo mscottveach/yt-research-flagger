@@ -58,8 +58,27 @@ def load_pending_ids(queue_file: Path) -> set:
     return pending
 
 
+def load_all_ids(queue_file: Path) -> dict:
+    """Load all video IDs and their statuses from the queue."""
+    if not queue_file.exists():
+        return {}
+    videos = {}
+    with open(queue_file, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entry = json.loads(line)
+                    vid = entry.get('video_id')
+                    status = entry.get('status', 'pending')
+                    if vid:
+                        videos[vid] = status  # last status wins (queue is append-only)
+                except (json.JSONDecodeError, KeyError):
+                    pass
+    return videos
+
+
 def main():
-    # Redirect stderr to a log file so errors don't corrupt the stdout protocol
     log_path = Path(__file__).parent.parent / 'data' / 'native_host.log'
     log_path.parent.mkdir(parents=True, exist_ok=True)
     sys.stderr = open(log_path, 'a', encoding='utf-8')
@@ -70,14 +89,22 @@ def main():
         write_message({'status': 'error', 'error': f'Failed to read message: {e}'})
         sys.exit(1)
 
+    queue_file = get_queue_file()
+
+    # Route by message type
+    msg_type = message.get('type')
+
+    if msg_type == 'LOAD_ALL':
+        videos = load_all_ids(queue_file)
+        write_message({'status': 'ok', 'videos': videos})
+        sys.exit(0)
+
+    # Default: flag a video (existing behavior)
     video_id = message.get('video_id')
     if not video_id:
         write_message({'status': 'error', 'error': 'video_id is required'})
         sys.exit(1)
 
-    queue_file = get_queue_file()
-
-    # Don't double-queue
     if video_id in load_pending_ids(queue_file):
         write_message({'status': 'already_queued', 'video_id': video_id})
         sys.exit(0)

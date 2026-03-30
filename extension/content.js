@@ -4,6 +4,26 @@
 const BUTTON_ID = 'yt-research-flag-btn';
 const TOAST_ID = 'yt-research-toast';
 
+function applyFlaggedStyle(btn) {
+  Object.assign(btn.style, {
+    background: '#065fd4',
+    border: '1px solid #065fd4',
+    color: '#fff',
+  });
+  btn.textContent = '✅ Flagged';
+  btn.title = 'Already flagged for research';
+}
+
+function applyUnflaggedStyle(btn) {
+  Object.assign(btn.style, {
+    background: 'none',
+    border: '1px solid #3ea6ff',
+    color: '#3ea6ff',
+  });
+  btn.textContent = '🔖 Flag';
+  btn.title = 'Flag for research (Alt+S)';
+}
+
 function getVideoId() {
   const params = new URLSearchParams(window.location.search);
   return params.get('v');
@@ -74,6 +94,8 @@ function flagCurrentVideo() {
       }
       if (response && response.success) {
         showToast('Flagged for research');
+        const btn = document.getElementById(BUTTON_ID);
+        if (btn) applyFlaggedStyle(btn);
       } else {
         const msg = response && response.error ? response.error : 'Could not reach server (is it running?)';
         showToast(msg, true);
@@ -85,19 +107,13 @@ function flagCurrentVideo() {
 function injectButton() {
   if (document.getElementById(BUTTON_ID)) return;
 
-  // Target the YouTube action buttons row
   const actionsRow = document.querySelector('#actions-inner #menu');
   if (!actionsRow) return;
 
   const btn = document.createElement('button');
   btn.id = BUTTON_ID;
-  btn.title = 'Flag for research (Alt+S)';
-  btn.textContent = '🔖 Flag';
   Object.assign(btn.style, {
-    background: 'none',
-    border: '1px solid #3ea6ff',
     borderRadius: '18px',
-    color: '#3ea6ff',
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: '500',
@@ -108,19 +124,48 @@ function injectButton() {
     lineHeight: '1',
   });
 
+  // Default to unflagged, then check
+  applyUnflaggedStyle(btn);
+
+  const videoId = getVideoId();
+  if (videoId) {
+    chrome.runtime.sendMessage({ type: 'CHECK_VIDEO', videoId }, (response) => {
+      if (chrome.runtime.lastError) return;
+      if (response && response.flagged) {
+        applyFlaggedStyle(btn);
+      }
+    });
+  }
+
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     flagCurrentVideo();
   });
 
-  // Insert before the first child of the menu row
   actionsRow.insertBefore(btn, actionsRow.firstChild);
 }
 
 // YouTube is a SPA — watch for DOM changes to re-inject button after navigation
+let lastCheckedVideoId = null;
+
 const observer = new MutationObserver(() => {
   if (window.location.pathname === '/watch') {
-    injectButton();
+    const currentVideoId = getVideoId();
+    const btn = document.getElementById(BUTTON_ID);
+
+    if (btn && currentVideoId && currentVideoId !== lastCheckedVideoId) {
+      // Video changed — re-check flag status
+      lastCheckedVideoId = currentVideoId;
+      applyUnflaggedStyle(btn);  // Reset while checking
+      chrome.runtime.sendMessage({ type: 'CHECK_VIDEO', videoId: currentVideoId }, (response) => {
+        if (chrome.runtime.lastError) return;
+        if (response && response.flagged) {
+          applyFlaggedStyle(btn);
+        }
+      });
+    }
+
+    injectButton();  // Inject if not present
   }
 });
 

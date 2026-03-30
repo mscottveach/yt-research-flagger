@@ -4,6 +4,19 @@
 
 const HOST_NAME = 'com.ytresearch.flagger';
 
+// Seed flagged video IDs into storage on install/update
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.runtime.sendNativeMessage(HOST_NAME, { type: 'LOAD_ALL' }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.warn('Could not seed flagged videos:', chrome.runtime.lastError.message);
+      return;
+    }
+    if (response && response.status === 'ok') {
+      chrome.storage.local.set({ flaggedVideos: response.videos });
+    }
+  });
+});
+
 // Handle messages from content.js
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'FLAG_VIDEO') {
@@ -11,6 +24,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .then((result) => sendResponse(result))
       .catch((err) => sendResponse({ success: false, error: err.message }));
     return true; // Keep message channel open for async response
+  }
+
+  if (message.type === 'CHECK_VIDEO') {
+    chrome.storage.local.get('flaggedVideos', (data) => {
+      const flagged = data.flaggedVideos || {};
+      const status = flagged[message.videoId] || null;
+      sendResponse({ flagged: status });
+    });
+    return true;
   }
 });
 
@@ -45,6 +67,12 @@ async function flagViaNativeMessaging({ videoId, title, url }) {
       }
 
       if (response && (response.status === 'queued' || response.status === 'already_queued')) {
+        // Sync to storage for fast content-script lookups
+        chrome.storage.local.get('flaggedVideos', (data) => {
+          const flagged = data.flaggedVideos || {};
+          flagged[payload.video_id] = 'pending';
+          chrome.storage.local.set({ flaggedVideos: flagged });
+        });
         resolve({ success: true, data: response });
       } else {
         resolve({ success: false, error: response?.error || 'Unknown response from host' });

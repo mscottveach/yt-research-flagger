@@ -99,13 +99,14 @@ def _get_model() -> str:
 
 def write_index(folder: Path):
     """
-    Regenerate _Index.md in the given folder.
+    Regenerate the folder note (same name as the folder) as an index.
     Shows all video notes newest-first with thumbnail, wikilink, and summary.
     """
-    index_path = folder / '_Index.md'
+    index_path = folder / f'{folder.name}.md'
 
-    # Collect all video note files (skip the index itself)
-    note_files = [p for p in sorted(folder.glob('*.md')) if p.name != '_Index.md']
+    # Collect all video note files (skip the index and any legacy _Index.md)
+    skip = {index_path.name, '_Index.md'}
+    note_files = [p for p in sorted(folder.glob('*.md')) if p.name not in skip]
 
     entries = []
     for path in note_files:

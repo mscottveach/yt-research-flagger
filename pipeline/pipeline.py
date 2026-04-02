@@ -135,7 +135,7 @@ def main():
     print(f'\nDone. Processed: {processed_count}, Failed: {failed_count}')
 
     # Always regenerate the index so it reflects current state
-    print('Updating _Index.md...')
+    print('Updating index...')
     index_path = write_index(OBSIDIAN_VAULT_PATH / OBSIDIAN_FOLDER)
     print(f'Index written: {index_path}')
 

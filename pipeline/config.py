@@ -8,7 +8,7 @@ load_dotenv(_root / '.env')
 
 GEMINI_API_KEY: str = os.environ['GEMINI_API_KEY']
 OBSIDIAN_VAULT_PATH: Path = Path(os.environ['OBSIDIAN_VAULT_PATH'])
-OBSIDIAN_FOLDER: str = os.getenv('OBSIDIAN_FOLDER', '03-resources/ytv')
+OBSIDIAN_FOLDER: str = os.getenv('OBSIDIAN_FOLDER', '03 - resources/youtube-notes')
 
 FLASK_PORT: int = int(os.getenv('FLASK_PORT', '5123'))
 
